@@ -1,34 +1,45 @@
 version: 0.2
-
+#This declares the buildspec version AWS CodeBuild understands. 0.2 is the current standard
+#for multi-phase builds (install, pre_build, build, post_build).
 env:
   variables:
-    AWS_REGION: us-east-1
-    ACCOUNT_ID: 257974628653
-    IMAGE_REPO_NAME: springboot-repo
-    IMAGE_TAG: latest
-
+  # Environment variables for AWS CodeBuild
+    AWS_ACCOUNT_ID: "266826707547" 
+    ECR_REPO_NAME: "springboot-app"
+    AWS_REGION: "us-east-1"
+ 
 phases:
   install:
     runtime-versions:
+      # runtime-versions: Prepares Java 17 and Docker inside CodeBuild's container.
       java: corretto17
       docker: 20
     commands:
-      - echo Installing dependencies...
+      - echo "Installing dependencies..."
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --no-include-email --region $AWS_REGION)
 
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - echo "Pre-build phase started..."
+      - echo "Compiling Spring Boot app with Maven..."
+      - mvn clean package -DskipTests
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
 
   build:
     commands:
-      - echo Build started on `date`
-      - ./mvnw clean package -DskipTests
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - echo "Building Docker image..."
+      - docker build -t $ECR_REPO_NAME:$IMAGE_TAG .
+      - docker tag $ECR_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Pushing the Docker image...
-      - docker push $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
-      - echo Build completed on `date`
+      - echo "Pushing Docker image to ECR..."
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG
+      - echo "Generating imagedefinitions.json for ECS..."
+      - printf '[{"name":"springboot-container","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
