@@ -11,9 +11,8 @@ env:
 phases:
   install:
     runtime-versions:
-      # runtime-versions: Prepares Java 17 and Docker inside CodeBuild's container.
+      # runtime-versions: Prepares Java 17ß
       java: corretto17
-      docker: 20
     commands:
       - echo "Installing dependencies..."
       - echo Logging in to Amazon ECR...
