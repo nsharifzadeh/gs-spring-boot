@@ -4,10 +4,9 @@ version: 0.2
 env:
   variables:
   # Environment variables for AWS CodeBuild
-    AWS_ACCOUNT_ID: "266826707547" 
-    ECR_REPO_NAME: "springboot-repo"
+    AWS_ACCOUNT_ID: "928808255181" 
+    ECR_REPO_NAME: "springboot-app"
     AWS_REGION: "us-east-1"
-    IMAGE_TAG: "latest"
  
 phases:
   install:
@@ -25,6 +24,7 @@ phases:
       - echo "Pre-build phase started..."
       - echo "Compiling Spring Boot app with Maven..."
       - mvn clean package -DskipTests
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
 
   build:
     commands:
