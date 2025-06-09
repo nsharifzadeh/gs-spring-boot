@@ -36,9 +36,9 @@ phases:
     commands:
       - echo "Pushing Docker image to ECR..."
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG
-      - echo "Generating imagedefinitions.json for ECS..."
+      - echo "Generating imagedefs.json for ECS..."
       - printf '[{"name":"springboot-container","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG > imagedefs.json
 
 artifacts:
   files:
-    - imagedefinitions.json
+    - imagedefs.json
